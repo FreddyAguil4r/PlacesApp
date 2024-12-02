@@ -1,4 +1,4 @@
-# favorite_places_app
+# Flutter App
 You can store the places you have visited in a list.
 
 - Riverpood
