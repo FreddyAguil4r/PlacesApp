@@ -146,7 +146,7 @@ class PlacesList extends StatelessWidget {
                   builder: (ctx) => AlertDialog(
                     title: const Text('Delete place?'),
                     content: const Text(
-                        'Are you sure you want to delete this location? This action cannot be undone.'),
+                        'Are you sure you want to delete this location?. This action cannot be undone.'),
                     actions: [
                       TextButton(
                         onPressed: () {
