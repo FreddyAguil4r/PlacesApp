@@ -27,7 +27,7 @@ class _AddPlaceScreenState extends ConsumerState<AddPlaceScreen> {
 
     if (enteredTitle.isEmpty ||
         _selectedImage == null ||
-        _selectedLocation == null) {
+         _selectedLocation == null) {
       return;
     }
 

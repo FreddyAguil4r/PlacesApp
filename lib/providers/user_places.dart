@@ -1,12 +1,17 @@
+import 'dart:convert';
 import 'dart:io';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'package:http/http.dart' as http;
 
 import 'package:favorite_places_app/models/place.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:path_provider/path_provider.dart' as syspaths;
 import 'package:path/path.dart' as path;
 import 'package:sqflite/sqflite.dart' as sql;
 import 'package:sqflite/sqlite_api.dart';
 
+//Configura y abre la base de datos SQLite
 Future<Database> _getDatabase() async {
   final dbPath = await sql.getDatabasesPath();
   final db = await sql.openDatabase(
@@ -26,7 +31,7 @@ class UserPlacesNotifier extends StateNotifier<List<Place>> {
 
   Future<void> loadPlaces() async {
     final db = await _getDatabase();
-    final data = await db.query('user_places');
+    final data = await db.query('user_places'); //consulta de todos los registros
     final places = data
         .map(
           (row) => Place(
@@ -65,6 +70,43 @@ class UserPlacesNotifier extends StateNotifier<List<Place>> {
 
     state = [newPlace, ...state];
   }
+
+  Future<void> removePlace(String id) async {
+    final db = await _getDatabase();
+    await db.delete('user_places', where: 'id = ?', whereArgs: [id]);
+
+    // Actualizar el estado eliminando el lugar correspondiente
+    state = state.where((place) => place.id != id).toList();
+  }
+
+  Future<List<LatLng>> calculateShortestRoute(
+      LatLng currentLocation, LatLng destination) async {
+    const apiKey = 'AIzaSyDpdae-3Rbj4LgF-FLu8x3n46iT86izy2I';
+
+    final url = Uri.parse(
+      'https://maps.googleapis.com/maps/api/directions/json'
+          '?origin=${currentLocation.latitude},${currentLocation.longitude}'
+          '&destination=${destination.latitude},${destination.longitude}'
+          '&key=$apiKey',
+    );
+
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      if (data['routes'].isNotEmpty) {
+        final polyline = data['routes'][0]['overview_polyline']['points'];
+        final points = PolylinePoints().decodePolyline(polyline);
+
+        return points
+            .map((point) => LatLng(point.latitude, point.longitude))
+            .toList();
+      }
+    }
+    return [];
+  }
+
 }
 
 //StateNotifierProvider es un tipo de proveedor que se usa para exponer.

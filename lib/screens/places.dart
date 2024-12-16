@@ -1,3 +1,4 @@
+import 'package:favorite_places_app/screens/all_places_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:favorite_places_app/widgets/places_list.dart';
 import 'package:flutter/material.dart';
@@ -41,6 +42,18 @@ class _PlacesScreenState extends ConsumerState<PlacesScreen> {
               );
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.map),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (ctx) => AllPlacesMapScreen(
+                    places: ref.watch(userPlacesProvider),
+                  ),
+                ),
+              );
+            },
+          ),
         ],
       ),
       body: Padding(
@@ -48,11 +61,12 @@ class _PlacesScreenState extends ConsumerState<PlacesScreen> {
         child: FutureBuilder(
           future: _placesFuture,
           builder: (context, snapshot) =>
-          snapshot.connectionState == ConnectionState.waiting
-              ? const Center(child: CircularProgressIndicator())
-              : PlacesList(
-            places: userPlaces,
-          ),
+              snapshot.connectionState == ConnectionState.waiting
+                  ? const Center(child: CircularProgressIndicator())
+                  : PlacesList(
+                      places: userPlaces,
+                      ref: ref,
+                    ),
         ),
       ),
     );
