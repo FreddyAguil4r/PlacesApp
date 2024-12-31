@@ -9,21 +9,20 @@ class AllPlacesMapScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Crear un conjunto de marcadores a partir de los lugares
     Set<Marker> markers = places
         .map(
           (place) => Marker(
-        markerId: MarkerId(place.id),
-        position: LatLng(
-          place.location.latitude,
-          place.location.longitude,
-        ),
-        infoWindow: InfoWindow(
-          title: place.title,
-          snippet: place.location.address,
-        ),
-      ),
-    )
+            markerId: MarkerId(place.id),
+            position: LatLng(
+              place.location.latitude,
+              place.location.longitude,
+            ),
+            infoWindow: InfoWindow(
+              title: place.title,
+              snippet: place.location.address,
+            ),
+          ),
+        )
         .toSet();
 
     return Scaffold(
@@ -34,9 +33,9 @@ class AllPlacesMapScreen extends StatelessWidget {
         initialCameraPosition: CameraPosition(
           target: places.isNotEmpty
               ? LatLng(
-            places[0].location.latitude,
-            places[0].location.longitude,
-          )
+                  places[0].location.latitude,
+                  places[0].location.longitude,
+                )
               : const LatLng(0, 0),
           zoom: 10,
         ),

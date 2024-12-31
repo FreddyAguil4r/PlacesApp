@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:favorite_places_app/widgets/places_list.dart';
 import 'package:flutter/material.dart';
 
-import '../providers/user_places.dart';
+import '../providers/user_places_provider.dart';
 import 'add_place.dart';
 
 class PlacesScreen extends ConsumerStatefulWidget {

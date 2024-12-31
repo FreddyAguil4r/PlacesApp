@@ -11,14 +11,13 @@ import 'package:path/path.dart' as path;
 import 'package:sqflite/sqflite.dart' as sql;
 import 'package:sqflite/sqlite_api.dart';
 
-//Configura y abre la base de datos SQLite
 Future<Database> _getDatabase() async {
   final dbPath = await sql.getDatabasesPath();
   final db = await sql.openDatabase(
     path.join(dbPath, 'places.db'),
     onCreate: (db, version) {
       return db.execute(
-          'CREATE TABLE user_places(id TEXT PRIMARY KEY, title TEXT, image TEXT, lat REAL, lng REAL, address TEXT)');
+          'CREATE TABLE user_places(id TEXT PRIMARY KEY, title TEXT, image TEXT, lat REAL, lng REAL, address TEXT,status INTEGER DEFAULT 0)');
     },
     version: 1,
   );
@@ -31,22 +30,8 @@ class UserPlacesNotifier extends StateNotifier<List<Place>> {
 
   Future<void> loadPlaces() async {
     final db = await _getDatabase();
-    final data = await db.query('user_places'); //consulta de todos los registros
-    final places = data
-        .map(
-          (row) => Place(
-            id: row['id'] as String,
-            title: row['title'] as String,
-            image: File(row['image'] as String),
-            location: PlaceLocation(
-              latitude: row['lat'] as double,
-              longitude: row['lng'] as double,
-              address: row['address'] as String,
-            ),
-          ),
-        )
-        .toList();
-
+    final data = await db.query('user_places');
+    final places = data.map((row) => Place.fromMap(row)).toList();
     state = places;
   }
 
@@ -55,28 +40,49 @@ class UserPlacesNotifier extends StateNotifier<List<Place>> {
     final filename = path.basename(image.path);
     final copiedImage = await image.copy('${appDir.path}/$filename');
 
-    final newPlace =
-        Place(title: title, image: copiedImage, location: location);
+    final newPlace = Place(
+      title: title,
+      image: copiedImage,
+      location: location,
+    );
 
     final db = await _getDatabase();
-    db.insert('user_places', {
-      'id': newPlace.id,
-      'title': newPlace.title,
-      'image': newPlace.image.path,
-      'lat': newPlace.location.latitude,
-      'lng': newPlace.location.longitude,
-      'address': newPlace.location.address,
-    });
-
+    db.insert('user_places', newPlace.toMap());
     state = [newPlace, ...state];
   }
 
   Future<void> removePlace(String id) async {
     final db = await _getDatabase();
     await db.delete('user_places', where: 'id = ?', whereArgs: [id]);
-
-    // Actualizar el estado eliminando el lugar correspondiente
     state = state.where((place) => place.id != id).toList();
+  }
+
+  Future<void> togglePlaceStatus(String id) async {
+    final db = await _getDatabase();
+    final place = state.firstWhere((place) => place.id == id);
+    final newStatus = place.status == PlaceStatus.pending
+        ? PlaceStatus.cleared
+        : PlaceStatus.pending;
+
+    await db.update(
+      'user_places',
+      {'status': newStatus == PlaceStatus.pending ? 0 : 1},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    state = state.map((p) {
+      if (p.id == id) {
+        return Place(
+          id: p.id,
+          title: p.title,
+          image: p.image,
+          location: p.location,
+          status: newStatus, // Cambiar solo el estado
+        );
+      }
+      return p; // Devolver los demás lugares sin cambios
+    }).toList();
   }
 
   Future<List<LatLng>> calculateShortestRoute(
@@ -106,13 +112,8 @@ class UserPlacesNotifier extends StateNotifier<List<Place>> {
     }
     return [];
   }
-
 }
 
-//StateNotifierProvider es un tipo de proveedor que se usa para exponer.
-//un StateNotifier a tu aplicación.
-//UserPlacesNotifier es el tipo del StateNotifier.
-//List<Place> es el tipo del estado que el StateNotifier expone.
 final userPlacesProvider =
     StateNotifierProvider<UserPlacesNotifier, List<Place>>(
   (ref) => UserPlacesNotifier(),

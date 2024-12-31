@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:favorite_places_app/providers/user_places.dart';
+import 'package:favorite_places_app/providers/user_places_provider.dart';
 import '../models/place.dart';
 import '../widgets/image_input.dart';
 import '../widgets/location_input.dart';

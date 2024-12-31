@@ -5,7 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../models/place.dart';
-import '../providers/user_places.dart';
+import '../providers/user_places_provider.dart';
 import '../screens/route_map.dart';
 
 class PlacesList extends StatelessWidget {
@@ -72,7 +72,6 @@ class PlacesList extends StatelessWidget {
     try {
       final userLocation = await Geolocator.getCurrentPosition();
       final userLatLng = LatLng(userLocation.latitude, userLocation.longitude);
-
       final routePoints = await ref.read(userPlacesProvider.notifier).calculateShortestRoute(
         userLatLng,
         LatLng(place.location.latitude, place.location.longitude),
@@ -114,70 +113,99 @@ class PlacesList extends StatelessWidget {
 
     return ListView.builder(
       itemCount: places.length,
-      itemBuilder: (ctx, index) => ListTile(
-        leading: CircleAvatar(
-          radius: 26,
-          backgroundImage: FileImage(places[index].image),
-        ),
-        title: Text(
-          places[index].title,
-          style: Theme.of(context).textTheme.titleMedium!.copyWith(
-            color: Theme.of(context).colorScheme.onBackground,
-          ),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(
-                Icons.directions,
-                color: Colors.blue,
-              ),
-              onPressed: () => _showShortestRoute(context, places[index]),
+      itemBuilder: (ctx, index) {
+        final place = places[index];
+
+        final cardColor = place.status == PlaceStatus.pending
+            ? Colors.orange.shade300
+            : Colors.green.shade300;
+
+        final statusIcon = place.status == PlaceStatus.pending
+            ? Icons.hourglass_empty
+            : Icons.check_circle;
+
+        return Card(
+          color: cardColor,
+          child: ListTile(
+            leading: CircleAvatar(
+              radius: 26,
+              backgroundImage: FileImage(place.image),
             ),
-            IconButton(
-              icon: const Icon(
-                Icons.delete,
-                color: Colors.red,
+            title: Text(
+              place.title,
+              style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                color: Theme.of(context).colorScheme.onBackground,
               ),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('Delete place?'),
-                    content: const Text(
-                        'Are you sure you want to delete this location?. This action cannot be undone.'),
-                    actions: [
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(ctx).pop();
-                        },
-                        child: const Text('No'),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          ref.read(userPlacesProvider.notifier).removePlace(
-                            places[index].id,
-                          );
-                          Navigator.of(ctx).pop();
-                        },
-                        child: const Text('Yes'),
-                      ),
-                    ],
+            ),
+            subtitle: Text(
+              place.location.address,
+              style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                color: Theme.of(context).colorScheme.onBackground,
+              ),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(statusIcon, color: Colors.white),
+                  onPressed: () {
+                    ref
+                        .read(userPlacesProvider.notifier)
+                        .togglePlaceStatus(place.id);
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.directions,
+                    color: Colors.blue,
                   ),
-                );
-              },
+                  onPressed: () => _showShortestRoute(context, place),
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.delete,
+                    color: Colors.red,
+                  ),
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Delete place?'),
+                        content: const Text(
+                            'Are you sure you want to delete this location?. This action cannot be undone.'),
+                        actions: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(ctx).pop();
+                            },
+                            child: const Text('No'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              ref.read(userPlacesProvider.notifier).removePlace(
+                                place.id,
+                              );
+                              Navigator.of(ctx).pop();
+                            },
+                            child: const Text('Yes'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
-          ],
-        ),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (ctx) => PlaceDetailScreen(place: places[index]),
-            ),
-          );
-        },
-      ),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (ctx) => PlaceDetailScreen(place: place),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
