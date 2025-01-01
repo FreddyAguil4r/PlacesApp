@@ -17,7 +17,17 @@ Future<Database> _getDatabase() async {
     path.join(dbPath, 'places.db'),
     onCreate: (db, version) {
       return db.execute(
-          'CREATE TABLE user_places(id TEXT PRIMARY KEY, title TEXT, image TEXT, lat REAL, lng REAL, address TEXT,status INTEGER DEFAULT 0)');
+        'CREATE TABLE user_places('
+        'id TEXT PRIMARY KEY, '
+        'title TEXT, '
+        'image TEXT, '
+        'lat REAL, '
+        'lng REAL, '
+        'address TEXT, '
+        'status INTEGER DEFAULT 0, '
+        'type INTEGER DEFAULT 0' // 0: Home, 1: Business
+        ')',
+      );
     },
     version: 1,
   );
@@ -35,7 +45,8 @@ class UserPlacesNotifier extends StateNotifier<List<Place>> {
     state = places;
   }
 
-  void addPlace(String title, File image, PlaceLocation location) async {
+  void addPlace(
+      String title, File image, PlaceLocation location, PlaceType type) async {
     final appDir = await syspaths.getApplicationDocumentsDirectory();
     final filename = path.basename(image.path);
     final copiedImage = await image.copy('${appDir.path}/$filename');
@@ -44,11 +55,23 @@ class UserPlacesNotifier extends StateNotifier<List<Place>> {
       title: title,
       image: copiedImage,
       location: location,
+      type: type,
     );
 
     final db = await _getDatabase();
     db.insert('user_places', newPlace.toMap());
     state = [newPlace, ...state];
+  }
+
+  List<Place> getFilteredPlaces() {
+    final today = DateTime.now().weekday;
+    return state.where((place) {
+      if (today == DateTime.sunday) {
+        return place.type == PlaceType.home;
+      } else {
+        return place.type == PlaceType.business;
+      }
+    }).toList();
   }
 
   Future<void> removePlace(String id) async {
@@ -91,9 +114,9 @@ class UserPlacesNotifier extends StateNotifier<List<Place>> {
 
     final url = Uri.parse(
       'https://maps.googleapis.com/maps/api/directions/json'
-          '?origin=${currentLocation.latitude},${currentLocation.longitude}'
-          '&destination=${destination.latitude},${destination.longitude}'
-          '&key=$apiKey',
+      '?origin=${currentLocation.latitude},${currentLocation.longitude}'
+      '&destination=${destination.latitude},${destination.longitude}'
+      '&key=$apiKey',
     );
 
     final response = await http.get(url);

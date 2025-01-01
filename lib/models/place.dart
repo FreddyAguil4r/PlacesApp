@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 
 const uuid = Uuid();
 enum PlaceStatus { pending, cleared }
+enum PlaceType { home, business }
 
 class PlaceLocation {
   const PlaceLocation({
@@ -22,6 +23,7 @@ class Place {
     required this.title,
     required this.image,
     required this.location,
+    this.type = PlaceType.home,
     this.status = PlaceStatus.pending,
     String? id,
   }) : id = id ?? uuid.v4();
@@ -30,6 +32,7 @@ class Place {
   final String title;
   final File image;
   final PlaceLocation location;
+  final PlaceType type;
   PlaceStatus status;
 
   Map<String, dynamic> toMap() {
@@ -40,6 +43,7 @@ class Place {
       'lat': location.latitude,
       'lng': location.longitude,
       'address': location.address,
+      'type': type == PlaceType.home ? 0 : 1,
       'status': status == PlaceStatus.pending ? 0 : 1,
     };
   }
@@ -54,6 +58,7 @@ class Place {
         longitude: map['lng'] as double,
         address: map['address'] as String,
       ),
+      type: map['type'] == 0 ? PlaceType.home : PlaceType.business,
       status: map['status'] == 0 ? PlaceStatus.pending : PlaceStatus.cleared,
     );
   }

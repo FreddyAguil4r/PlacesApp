@@ -21,27 +21,32 @@ class _AddPlaceScreenState extends ConsumerState<AddPlaceScreen> {
   final _titleController = TextEditingController();
   File? _selectedImage;
   PlaceLocation? _selectedLocation;
+  PlaceType _selectedType = PlaceType.home;
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    super.dispose();
+  }
 
   void _savePlace() {
     final enteredTitle = _titleController.text;
 
     if (enteredTitle.isEmpty ||
         _selectedImage == null ||
-         _selectedLocation == null) {
+        _selectedLocation == null) {
       return;
     }
 
-    ref
-        .read(userPlacesProvider.notifier)
-        .addPlace(enteredTitle, _selectedImage!, _selectedLocation!);
+    // Agrega el lugar al estado global con el tipo seleccionado
+    ref.read(userPlacesProvider.notifier).addPlace(
+          enteredTitle,
+          _selectedImage!,
+          _selectedLocation!,
+          _selectedType,
+        );
 
     Navigator.of(context).pop();
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    super.dispose();
   }
 
   @override
@@ -53,6 +58,7 @@ class _AddPlaceScreenState extends ConsumerState<AddPlaceScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(12),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
               decoration: const InputDecoration(labelText: 'Title'),
@@ -60,6 +66,43 @@ class _AddPlaceScreenState extends ConsumerState<AddPlaceScreen> {
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onBackground,
               ),
+            ),
+            const SizedBox(height: 10),
+            DropdownButton<PlaceType>(
+              value: _selectedType,
+              onChanged: (newValue) {
+                setState(() {
+                  _selectedType = newValue!;
+                });
+              },
+              items: [
+                DropdownMenuItem(
+                  value: PlaceType.home,
+                  child: Text(
+                    'Home',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                DropdownMenuItem(
+                  value: PlaceType.business,
+                  child: Text(
+                    'Business',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              ],
+              style: TextStyle(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary, // Color del texto seleccionado
+              ),
+              dropdownColor: Theme.of(context)
+                  .colorScheme
+                  .surface, // Fondo de las opciones
             ),
             const SizedBox(height: 10),
             ImageInput(
@@ -74,10 +117,13 @@ class _AddPlaceScreenState extends ConsumerState<AddPlaceScreen> {
               },
             ),
             const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _savePlace,
-              icon: const Icon(Icons.add),
-              label: const Text('Add Place'),
+            Align(
+              alignment: Alignment.center, // Centrar horizontalmente
+              child: ElevatedButton.icon(
+                onPressed: _savePlace,
+                icon: const Icon(Icons.add),
+                label: const Text('Add Place'),
+              ),
             ),
           ],
         ),
